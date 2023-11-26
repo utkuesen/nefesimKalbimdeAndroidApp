@@ -51,9 +51,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-
-            android:progress="70"
-            android:max="100"/>
+            android:clickable="false"
+            android:max="100"
+            android:overScrollMode="never"
+            android:progress="0" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -61,19 +62,19 @@
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/textView2"
-                android:layout_width="wrap_content"
+                android:id="@+id/currentPosition"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/media_player_passing_second" />
+                android:text="00:00" />
 
             <TextView
-                android:id="@+id/textView3"
-                android:layout_width="wrap_content"
+                android:id="@+id/remainingPosition"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="end"
-                android:text="@string/media_player_remaining_second" />
+                android:text="20:05" />
         </LinearLayout>
 
         <LinearLayout
@@ -84,7 +85,7 @@
             android:orientation="horizontal">
 
             <ImageView
-                android:id="@+id/imageView5"
+                android:id="@+id/back_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -92,7 +93,7 @@
                 app:srcCompat="@drawable/back_button" />
 
             <ImageView
-                android:id="@+id/imageView4"
+                android:id="@+id/stop_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -100,7 +101,7 @@
                 app:srcCompat="@drawable/stop_button" />
 
             <ImageView
-                android:id="@+id/imageView3"
+                android:id="@+id/playPauseButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -108,7 +109,7 @@
                 app:srcCompat="@drawable/play_button" />
 
             <ImageView
-                android:id="@+id/imageView2"
+                android:id="@+id/forward_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
