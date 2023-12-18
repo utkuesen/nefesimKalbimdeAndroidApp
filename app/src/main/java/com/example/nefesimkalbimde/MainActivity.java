@@ -1,42 +1,29 @@
 package com.example.nefesimkalbimde;
 
-import android.media.AudioAttributes;
-import android.media.AudioFocusRequest;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.os.Build;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
-
-import com.google.android.material.snackbar.Snackbar;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.util.Log;
-import android.view.MotionEvent;
+import android.os.IBinder;
 import android.view.View;
 
-import androidx.core.view.WindowCompat;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
-
-import com.example.nefesimkalbimde.databinding.ActivityMainBinding;
-
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import java.io.IOException;
 import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 
-import Controller.MediaPlayerController;
+import controllers.MediaPlayerController;
+
 
 public class MainActivity extends AppCompatActivity {
     MediaPlayerController mediaPlayerController;
@@ -55,20 +42,98 @@ public class MainActivity extends AppCompatActivity {
     Timer mediaPlayerUpdateDisplaysTimer;
     private boolean isMediaSeekBarBusy;
     private boolean isMediaCurrentPositionTextViewBusy;
-    private boolean isMediaRemaininPositionTextViewBusy;
+    private boolean isMediaRemainingPositionTextViewBusy;
     private boolean isMediaPlayPauseImageViewBusy;
+    Intent serviceCreationIntent;
+    IntentFilter intentFilter;
+    ServiceConnection mServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mediaPlayerController = ((MediaPlayerController.MyBinder)service).getService();
+            startService(serviceCreationIntent);
+        }
 
-
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            stopService(serviceCreationIntent);
+        }
+    };
 
     @Override
     protected void onStart() {
         super.onStart();
         setContentView(R.layout.activity_main);
 
-        mediaPlayerController = new MediaPlayerController(this);
+        //mediaPlayerController = new MediaPlayerController(this);
+        serviceCreationIntent = new Intent(this, MediaPlayerController.class);
+        bindService(serviceCreationIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
+        intentFilter = new IntentFilter();
+        intentFilter.addAction("NEFESIM_KALBIMDE_MEDIA_PLAYER_UPDATE");
+        registerReceiver(intentReceiver, intentFilter);
         initializeComponents();
         setOnClickMethods();
 
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Intent intent = new Intent(getApplicationContext(), MediaPlayerController.class);
+        intent.putExtra("command", "viewClosed");
+        startService(intent);
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Intent intent = new Intent(getApplicationContext(), MediaPlayerController.class);
+        intent.putExtra("command", "viewOpened");
+        startService(intent);
+    }
+    private BroadcastReceiver intentReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String command = intent.getExtras().getString("command");
+            switch (command){
+                case "updateMediaPlayerDisplayOnScreen":
+                    updateMediaPlayerDisplay(intent);
+                    break;
+                case "mediaStopOnClick":
+                    break;
+                case "mediaForwardOnClick":
+                    break;
+                case "mediaBackOnClick":
+                    break;
+                case "mediaClickOnSeekBar":
+                    break;
+                case "viewClosed":
+                    break;
+                case "viewOpened":
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+
+    private void updateMediaPlayerDisplay(Intent intent) {
+        try {
+            int mediaDuration = intent.getExtras().getInt("mediaDuration");
+            int mediaCurrentPosition = intent.getExtras().getInt("mediaCurrentPosition");
+            String currentPositionStr = intent.getExtras().getString("currentPositionStr");
+            String remainingPositionStr = intent.getExtras().getString("remainingPositionStr");
+            boolean isPlayButtonUpdated = intent.getExtras().getBoolean("isPlayButtonUpdated");
+
+            setSeekBarProgress(mediaCurrentPosition, mediaDuration);
+            setCurrentPosition(currentPositionStr);
+            setRemainingPosition(remainingPositionStr);
+            if (isPlayButtonUpdated) {
+                setPlayPauseImageViewImageResource(R.drawable.pause_button);
+            } else {
+                setPlayPauseImageViewImageResource(R.drawable.play_button);
+            }
+        }catch (Exception e){
+            System.out.println("MainActivity updateMediaPlayerDisplay error: " + e.getLocalizedMessage());
+        }
     }
 
     @Override
@@ -95,29 +160,36 @@ public class MainActivity extends AppCompatActivity {
     private void setOnClickMethods() {
         mediaPlayPauseImageView.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                mediaPlayerController.mediaPlayPauseOnClick();
-
+            public void onClick(View v) {
+                Intent intent = new Intent(v.getContext(), MediaPlayerController.class);
+                intent.putExtra("command", "mediaPlayPauseOnClick");
+                startService(intent);
             }
         });
 
         mediaStopImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mediaPlayerController.mediaStopOnClick();
+                Intent intent = new Intent(v.getContext(), MediaPlayerController.class);
+                intent.putExtra("command", "mediaStopOnClick");
+                startService(intent);
             }
         });
 
         mediaForwardImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mediaPlayerController.mediaForwardOnClick();
+                Intent intent = new Intent(v.getContext(), MediaPlayerController.class);
+                intent.putExtra("command", "mediaForwardOnClick");
+                startService(intent);
             }
         });
         mediaBackImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mediaPlayerController.mediaBackOnClick();
+                Intent intent = new Intent(v.getContext(), MediaPlayerController.class);
+                intent.putExtra("command", "mediaBackOnClick");
+                startService(intent);
             }
         });
 
@@ -125,7 +197,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
-                    mediaPlayerController.mediaClickOnSeekBar(progress);
+                    Intent intent = new Intent(seekBar.getContext(), MediaPlayerController.class);
+                    intent.putExtra("command", "mediaClickOnSeekBar");
+                    intent.putExtra("progress", progress);
+                    startService(intent);
+//                    mediaPlayerController.mediaClickOnSeekBar(progress);
                 }
             }
 
@@ -184,16 +260,16 @@ public class MainActivity extends AppCompatActivity {
 
     public boolean setRemainingPosition(String remPosStr){
         try {
-            if (isMediaRemaininPositionTextViewBusy) {
+            if (isMediaRemainingPositionTextViewBusy) {
                 return false;
             } else {
-                isMediaRemaininPositionTextViewBusy = true;
+                isMediaRemainingPositionTextViewBusy = true;
             }
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     remainingPositionTextView.setText(remPosStr);
-                    isMediaRemaininPositionTextViewBusy = false;
+                    isMediaRemainingPositionTextViewBusy = false;
                 }
             });
 
@@ -229,14 +305,14 @@ public class MainActivity extends AppCompatActivity {
     public boolean resetMediaPlayerDisplay(){
         if (isMediaSeekBarBusy ||
             isMediaCurrentPositionTextViewBusy ||
-            isMediaRemaininPositionTextViewBusy ||
+            isMediaRemainingPositionTextViewBusy ||
             isMediaPlayPauseImageViewBusy
         ) {
             return false;
         } else {
             isMediaSeekBarBusy = true;
             isMediaCurrentPositionTextViewBusy = true;
-            isMediaRemaininPositionTextViewBusy = true;
+            isMediaRemainingPositionTextViewBusy = true;
             isMediaPlayPauseImageViewBusy = true;
         }
         runOnUiThread(new Runnable() {
@@ -249,22 +325,11 @@ public class MainActivity extends AppCompatActivity {
 
                 isMediaSeekBarBusy = false;
                 isMediaCurrentPositionTextViewBusy = false;
-                isMediaRemaininPositionTextViewBusy = false;
+                isMediaRemainingPositionTextViewBusy = false;
                 isMediaPlayPauseImageViewBusy = false;
             }
         });
 
         return true;
     }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-    }
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
-
-
 }

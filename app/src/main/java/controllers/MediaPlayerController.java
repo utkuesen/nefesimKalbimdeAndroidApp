@@ -1,12 +1,17 @@
-package Controller;
+package controllers;
 
+
+import android.app.Service;
+import android.content.Intent;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Binder;
+import android.os.IBinder;
 import android.util.Log;
-import android.view.MotionEvent;
 
-import com.example.nefesimkalbimde.MainActivity;
+import androidx.annotation.Nullable;
+
 import com.example.nefesimkalbimde.R;
 
 import java.util.Timer;
@@ -15,19 +20,83 @@ import java.util.concurrent.TimeUnit;
 
 import Model.MediaPlayerModel;
 
-public class MediaPlayerController {
-    private static final int UPDATE_MEDIA_PLAYER_SCREEN_PERIOD_MILlI_SECONDS = 500;
+public class MediaPlayerController extends Service {
+    boolean isViewAppeared;
+    private static final int UPDATE_MEDIA_PLAYER_SCREEN_PERIOD_MILlI_SECONDS = 1000;
     private static final int MEDIA_POSITION_CHANGE_STEP_MILlI_SECONDS = 10000;
-    MainActivity view;
+ //   MainActivity view;
     MediaPlayerModel mediaPlayerModel;
     private MediaPlayer mediaPlayer;
     private AudioManager mAudioManager;
 
     Timer mediaPlayerUpdateDisplaysTimer;
 
-    public MediaPlayerController(MainActivity activity) {
-        view = activity;
+    private final IBinder binder = new MyBinder();
+
+    public MediaPlayerController() {
+      //  view = activity;
         this.mediaPlayerModel = new MediaPlayerModel();
+        isViewAppeared = false;
+    }
+    public class MyBinder extends Binder {
+        public MediaPlayerController getService() {
+            return MediaPlayerController.this;
+        }
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return binder;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        super.onStartCommand(intent, flags, startId);
+        try {
+            String command = intent.getExtras().getString("command");
+            switch (command){
+                case "mediaPlayPauseOnClick":
+                    mediaPlayPauseOnClick();
+                    break;
+                case "mediaStopOnClick":
+                    mediaStopOnClick();
+                    break;
+                case "mediaForwardOnClick":
+                    mediaForwardOnClick();
+                    break;
+                case "mediaBackOnClick":
+                    mediaBackOnClick();
+                    break;
+                case "mediaClickOnSeekBar":
+                    int progress = intent.getExtras().getInt("command");
+                    mediaClickOnSeekBar(progress);
+                    break;
+                case "viewClosed":
+                    viewClosed();
+                    break;
+                case "viewOpened":
+                    viewOpened();
+                    break;
+                default:
+                    break;
+            }
+        } catch (Exception e){
+            System.out.println("onStartCommand error: " + e.getLocalizedMessage());
+        }
+        return Service.START_STICKY;
+    }
+
+    private void viewClosed() {
+        isViewAppeared = false;
+    }
+    private void viewOpened() {
+        isViewAppeared = true;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
     }
 
     private void startMediaPlayerTimer(){
@@ -35,7 +104,9 @@ public class MediaPlayerController {
         mediaPlayerUpdateDisplaysTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                updateMediaPlayerDisplayOnScreen();
+                if (isViewAppeared){
+                    updateMediaPlayerDisplayOnScreen();
+                }
             }
         }, 0, UPDATE_MEDIA_PLAYER_SCREEN_PERIOD_MILlI_SECONDS);
     }
@@ -44,7 +115,7 @@ public class MediaPlayerController {
         // Update Seekbar on screen
         int mediaDuration = mediaPlayer.getDuration();
         int mediaCurrentPosition = mediaPlayer.getCurrentPosition();
-        boolean isSeekBarUpdated = view.setSeekBarProgress(mediaCurrentPosition, mediaDuration);
+     //   boolean isSeekBarUpdated = view.setSeekBarProgress(mediaCurrentPosition, mediaDuration);
 
         // Update current position on screen
         long curDuration_sec = TimeUnit.MILLISECONDS.toSeconds(mediaCurrentPosition) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(mediaCurrentPosition));
@@ -52,7 +123,7 @@ public class MediaPlayerController {
         String curDuration_sec_str = curDuration_sec > 9 ? String.valueOf(curDuration_sec) : "0" + String.valueOf(curDuration_sec);
         String curDuration_min_str = curDuration_min > 9 ? String.valueOf(curDuration_min) : "0" + String.valueOf(curDuration_min);
         String curPosStr = curDuration_min_str + ":" + curDuration_sec_str;
-        boolean isCurrentPositionUpdated = view.setCurrentPosition(curPosStr);
+    //    boolean isCurrentPositionUpdated = view.setCurrentPosition(curPosStr);
 
         // Update remaining position on screen
         int remainingDuration = mediaDuration - mediaCurrentPosition;
@@ -61,23 +132,31 @@ public class MediaPlayerController {
         String remainingDuration_sec_str = remainingDuration_sec > 9 ? String.valueOf(remainingDuration_sec) : "0" + String.valueOf(remainingDuration_sec);
         String remainingDuration_min_str = remainingDuration_min > 9 ? String.valueOf(remainingDuration_min) : "0" + String.valueOf(remainingDuration_min);
         String remPosStr = remainingDuration_min_str + ":" + remainingDuration_sec_str;
-        boolean isRemainingPositionUpdated = view.setRemainingPosition(remPosStr);
-
+     //   boolean isRemainingPositionUpdated = view.setRemainingPosition(remPosStr);
         // Update start stop button image
+        boolean isPlayButtonUpdated;
         boolean isMediaPlaying = mediaPlayer.isPlaying();
         if (isMediaPlaying){
-            boolean isPlayButtonUpdated = view.setPlayPauseImageViewImageResource(R.drawable.pause_button);
+            isPlayButtonUpdated = true; // view.setPlayPauseImageViewImageResource(R.drawable.pause_button);
         } else {
-            boolean isPlayButtonUpdated = view.setPlayPauseImageViewImageResource(R.drawable.play_button);
+            isPlayButtonUpdated = false; // view.setPlayPauseImageViewImageResource(R.drawable.play_button);
         }
+        broadcastUpdateMediaPlayerDisplayOnScreen(mediaDuration, mediaCurrentPosition, curPosStr, remPosStr, isPlayButtonUpdated);
 
-
-        if (isSeekBarUpdated && isCurrentPositionUpdated && isRemainingPositionUpdated){
-            return true;
-        } else {
-            return false;
-        }
+        return true;
     }
+
+    private void broadcastUpdateMediaPlayerDisplayOnScreen(int mediaDuration, int mediaCurrentPosition, String currentPositionStr, String remainingPositionStr, boolean isPlayButtonUpdated) {
+        Intent intent = new Intent("NEFESIM_KALBIMDE_MEDIA_PLAYER_UPDATE");
+        intent.putExtra("command", "updateMediaPlayerDisplayOnScreen");
+        intent.putExtra("mediaDuration", mediaDuration);
+        intent.putExtra("mediaCurrentPosition", mediaCurrentPosition);
+        intent.putExtra("currentPositionStr", currentPositionStr);
+        intent.putExtra("remainingPositionStr", remainingPositionStr);
+        intent.putExtra("isPlayButtonUpdated", isPlayButtonUpdated);
+        sendBroadcast(intent);
+    }
+
 
     public void mediaPlayPauseOnClick(){
         if (mediaPlayerModel.isMediaListening()){
@@ -88,7 +167,7 @@ public class MediaPlayerController {
             mediaPlayer.pause();
             mediaPlayerUpdateDisplaysTimer.cancel();
             mediaPlayerModel.setMediaListening(false);
-            boolean isPlayButtonUpdated = view.setPlayPauseImageViewImageResource(R.drawable.play_button);
+//            boolean isPlayButtonUpdated = view.setPlayPauseImageViewImageResource(R.drawable.play_button);
         } else {
             if (mediaPlayerModel.isMediaStarted()) {
                 mediaPlayer.start();
@@ -98,7 +177,7 @@ public class MediaPlayerController {
             }
             startMediaPlayerTimer();
             mediaPlayerModel.setMediaListening(true);
-            boolean isPlayButtonUpdated = view.setPlayPauseImageViewImageResource(R.drawable.pause_button);
+//            boolean isPlayButtonUpdated = view.setPlayPauseImageViewImageResource(R.drawable.pause_button);
         }
     }
     public void mediaStopOnClick(){
@@ -121,7 +200,7 @@ public class MediaPlayerController {
                     nextPosition = currPosition + MEDIA_POSITION_CHANGE_STEP_MILlI_SECONDS;
                 }
                 mediaPlayer.seekTo(nextPosition);
-                boolean isSeekBarUpdated = view.setSeekBarProgress(nextPosition, duration);
+//                boolean isSeekBarUpdated = view.setSeekBarProgress(nextPosition, duration);
             }
         }
     }
@@ -138,7 +217,7 @@ public class MediaPlayerController {
                     nextPosition = currPosition - MEDIA_POSITION_CHANGE_STEP_MILlI_SECONDS;
                 }
                 mediaPlayer.seekTo(nextPosition);
-                boolean isSeekBarUpdated = view.setSeekBarProgress(nextPosition, duration);
+//                boolean isSeekBarUpdated = view.setSeekBarProgress(nextPosition, duration);
             }
         }
     }
@@ -149,14 +228,14 @@ public class MediaPlayerController {
             int duration = mediaPlayer.getDuration();
             if(mediaPlayer.isPlaying()) {
                 mediaPlayer.seekTo(progress);
-                boolean isSeekBarUpdated = view.setSeekBarProgress(progress, duration);
+//                boolean isSeekBarUpdated = view.setSeekBarProgress(progress, duration);
 
             } else {
-                boolean isSeekBarUpdated = view.setSeekBarProgress(0, duration);
+//                boolean isSeekBarUpdated = view.setSeekBarProgress(0, duration);
 
             }
         } else {
-            boolean isSeekBarUpdated = view.setSeekBarProgress(0, 100);
+//            boolean isSeekBarUpdated = view.setSeekBarProgress(0, 100);
 
         }
 
@@ -166,7 +245,7 @@ public class MediaPlayerController {
     }
 
     private void startMusic() {
-        mAudioManager = (AudioManager) view.getSystemService(view.getApplicationContext().AUDIO_SERVICE);
+        mAudioManager = (AudioManager) getSystemService(getApplicationContext().AUDIO_SERVICE);
 
     /* Request audio focus so in order to play the audio file. The app needs to play a
         audio file, so we will request audio focus for unknown duration
@@ -180,16 +259,16 @@ public class MediaPlayerController {
         }
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             //create player
-            mediaPlayer = MediaPlayer.create(view, R.raw.meditation);
+            mediaPlayer = MediaPlayer.create(this, R.raw.meditation);
             //start playing
             Log.d("OnCreate method", "OnCreate player created");
             mediaPlayer.start();
             //listen for completition of playing
-            mediaPlayer.setOnCompletionListener(mCompletitionListener);
+            mediaPlayer.setOnCompletionListener(mCompletionListener);
         }
     }
 
-    private MediaPlayer.OnCompletionListener mCompletitionListener = new MediaPlayer.OnCompletionListener() {
+    private MediaPlayer.OnCompletionListener mCompletionListener = new MediaPlayer.OnCompletionListener() {
         @Override
         public void onCompletion(MediaPlayer mediaPlayer) {
             releaseMediaPlayer();
@@ -217,8 +296,9 @@ public class MediaPlayerController {
             mediaPlayer.release();
             mAudioManager.abandonAudioFocus(mOnAudioFocusChangeListener);
             mediaPlayer = null;
-            view.resetMediaPlayerDisplay();
+//            view.resetMediaPlayerDisplay();
         }
     }
+
 
 }
