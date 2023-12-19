@@ -37,9 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
     public Button remindButton;
     public Button meditationCompletedButton;
-    public int length;
 
-    Timer mediaPlayerUpdateDisplaysTimer;
     private boolean isMediaSeekBarBusy;
     private boolean isMediaCurrentPositionTextViewBusy;
     private boolean isMediaRemainingPositionTextViewBusy;
@@ -64,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         setContentView(R.layout.activity_main);
 
-        //mediaPlayerController = new MediaPlayerController(this);
         serviceCreationIntent = new Intent(this, MediaPlayerController.class);
         bindService(serviceCreationIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
         intentFilter = new IntentFilter();
@@ -97,23 +94,45 @@ public class MainActivity extends AppCompatActivity {
                 case "updateMediaPlayerDisplayOnScreen":
                     updateMediaPlayerDisplay(intent);
                     break;
-                case "mediaStopOnClick":
+                case "updatePlayPauseButtonViewOnScreen":
+                    updatePlayPauseButtonViewOnScreen(intent);
                     break;
-                case "mediaForwardOnClick":
+                case "resetMediaPlayerDisplay":
+                    resetMediaPlayerDisplay();
                     break;
-                case "mediaBackOnClick":
+                case "updateSeekBarOnScreen":
+                    updateSeekBarOnScreen(intent);
                     break;
                 case "mediaClickOnSeekBar":
-                    break;
-                case "viewClosed":
-                    break;
-                case "viewOpened":
                     break;
                 default:
                     break;
             }
         }
     };
+
+    private void updateSeekBarOnScreen(Intent intent) {
+        try {
+            int nextPosition = intent.getExtras().getInt("nextPosition");
+            int duration = intent.getExtras().getInt("duration");
+            setSeekBarProgress(nextPosition, duration);
+        }catch (Exception e){
+            System.out.println("MainActivity updateSeekBarOnScreen error: " + e.getLocalizedMessage());
+        }
+    }
+
+    private void updatePlayPauseButtonViewOnScreen(Intent intent) {
+        try {
+            boolean isButtonPlay = intent.getExtras().getBoolean("isButtonPlay");
+            if (isButtonPlay) {
+                setPlayPauseImageViewImageResource(R.drawable.play_button);
+            } else {
+                setPlayPauseImageViewImageResource(R.drawable.pause_button);
+            }
+        }catch (Exception e){
+            System.out.println("MainActivity updatePlayPauseButtonViewOnScreen error: " + e.getLocalizedMessage());
+        }
+    }
 
     private void updateMediaPlayerDisplay(Intent intent) {
         try {

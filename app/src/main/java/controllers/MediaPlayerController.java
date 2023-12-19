@@ -69,7 +69,7 @@ public class MediaPlayerController extends Service {
                     mediaBackOnClick();
                     break;
                 case "mediaClickOnSeekBar":
-                    int progress = intent.getExtras().getInt("command");
+                    int progress = intent.getExtras().getInt("progress");
                     mediaClickOnSeekBar(progress);
                     break;
                 case "viewClosed":
@@ -92,6 +92,17 @@ public class MediaPlayerController extends Service {
     }
     private void viewOpened() {
         isViewAppeared = true;
+        boolean isMediaListening = mediaPlayerModel.isMediaListening();
+        if (isMediaListening){
+            updatePlayPauseButtonViewOnScreen(false);
+        } else {
+            boolean isMediaStarted = mediaPlayerModel.isMediaStarted();
+            if (isMediaStarted) {
+                updateMediaPlayerDisplayOnScreen();
+            } else {
+                updatePlayPauseButtonViewOnScreen(true);
+            }
+        }
     }
 
     @Override
@@ -160,14 +171,12 @@ public class MediaPlayerController extends Service {
 
     public void mediaPlayPauseOnClick(){
         if (mediaPlayerModel.isMediaListening()){
-//                    Snackbar.make(view, "Stop music", Snackbar.LENGTH_LONG)
-//                            .setAnchorView(R.id.imageView)
-//                            .setAction("Action", null).show();
-//                    releaseMediaPlayer();
             mediaPlayer.pause();
             mediaPlayerUpdateDisplaysTimer.cancel();
             mediaPlayerModel.setMediaListening(false);
-//            boolean isPlayButtonUpdated = view.setPlayPauseImageViewImageResource(R.drawable.play_button);
+            if (isViewAppeared){
+                updatePlayPauseButtonViewOnScreen(true);
+            }
         } else {
             if (mediaPlayerModel.isMediaStarted()) {
                 mediaPlayer.start();
@@ -177,9 +186,19 @@ public class MediaPlayerController extends Service {
             }
             startMediaPlayerTimer();
             mediaPlayerModel.setMediaListening(true);
-//            boolean isPlayButtonUpdated = view.setPlayPauseImageViewImageResource(R.drawable.pause_button);
+            if (isViewAppeared){
+                updatePlayPauseButtonViewOnScreen(false);
+            }
         }
     }
+
+    private void updatePlayPauseButtonViewOnScreen(boolean isButtonPlay) {
+        Intent intent = new Intent("NEFESIM_KALBIMDE_MEDIA_PLAYER_UPDATE");
+        intent.putExtra("command", "updatePlayPauseButtonViewOnScreen");
+        intent.putExtra("isButtonPlay", isButtonPlay);
+        sendBroadcast(intent);
+    }
+
     public void mediaStopOnClick(){
         if (mediaPlayerModel.isMediaStarted()){
             releaseMediaPlayer();
@@ -200,9 +219,19 @@ public class MediaPlayerController extends Service {
                     nextPosition = currPosition + MEDIA_POSITION_CHANGE_STEP_MILlI_SECONDS;
                 }
                 mediaPlayer.seekTo(nextPosition);
-//                boolean isSeekBarUpdated = view.setSeekBarProgress(nextPosition, duration);
+                if (isViewAppeared){
+                    updateSeekBarOnScreen(nextPosition, duration);
+                }
             }
         }
+    }
+
+    private void updateSeekBarOnScreen(int nextPosition, int duration) {
+        Intent intent = new Intent("NEFESIM_KALBIMDE_MEDIA_PLAYER_UPDATE");
+        intent.putExtra("command", "updateSeekBarOnScreen");
+        intent.putExtra("nextPosition", nextPosition);
+        intent.putExtra("duration", duration);
+        sendBroadcast(intent);
     }
 
     public void mediaBackOnClick(){
@@ -217,31 +246,20 @@ public class MediaPlayerController extends Service {
                     nextPosition = currPosition - MEDIA_POSITION_CHANGE_STEP_MILlI_SECONDS;
                 }
                 mediaPlayer.seekTo(nextPosition);
-//                boolean isSeekBarUpdated = view.setSeekBarProgress(nextPosition, duration);
+                if (isViewAppeared){
+                    updateSeekBarOnScreen(nextPosition, duration);
+                }
             }
         }
     }
 
     public void mediaClickOnSeekBar(int progress){
-
         if(mediaPlayer != null) {
             int duration = mediaPlayer.getDuration();
             if(mediaPlayer.isPlaying()) {
                 mediaPlayer.seekTo(progress);
-//                boolean isSeekBarUpdated = view.setSeekBarProgress(progress, duration);
-
-            } else {
-//                boolean isSeekBarUpdated = view.setSeekBarProgress(0, duration);
-
             }
-        } else {
-//            boolean isSeekBarUpdated = view.setSeekBarProgress(0, 100);
-
         }
-
-
-
-
     }
 
     private void startMusic() {
@@ -296,8 +314,16 @@ public class MediaPlayerController extends Service {
             mediaPlayer.release();
             mAudioManager.abandonAudioFocus(mOnAudioFocusChangeListener);
             mediaPlayer = null;
-//            view.resetMediaPlayerDisplay();
+            if (isViewAppeared){
+                resetMediaPlayerDisplay();
+            }
         }
+    }
+
+    private void resetMediaPlayerDisplay() {
+        Intent intent = new Intent("NEFESIM_KALBIMDE_MEDIA_PLAYER_UPDATE");
+        intent.putExtra("command", "resetMediaPlayerDisplay");
+        sendBroadcast(intent);
     }
 
 
