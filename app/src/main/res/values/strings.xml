@@ -45,6 +45,12 @@
     </string>
     <string name="media_player_passing_second">11:20</string>
     <string name="media_player_remaining_second">7:40</string>
-    <string name="remind_me_later_button_str">Sonra Hatırlat</string>
-    <string name="completed_button_str">Egzersizimi yaptım</string>
+    <string name="remind_me_later_button_str">Sonra hatırlat</string>
+    <string name="completed_button_str">Egzersizi tamamlamalısınız</string>
+    <string name="meditation_completed_text">Bugün tamamlandı</string>
+    <string name="isMeditationCompletedStr">isMeditationCompleted</string>
+    <string name="meditation_incompleted_text">Egzersizi tamamlamalısınız</string>
+    <string name="lastModifiedDateOnDBStr">lastModifiedDate</string>
+    <string name="isMeditationCompletedOnDBStr">isMeditationCompleted</string>
+    <string name="SharedPreferencesNameStr">NefesimKalbimdeSP</string>
 </resources>

@@ -1,11 +1,16 @@
 package com.example.nefesimkalbimde;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -20,12 +25,16 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Timer;
 
+import controllers.AlarmController;
 import controllers.MediaPlayerController;
 
 
 public class MainActivity extends AppCompatActivity {
+    public static boolean isActivityAlive;
     MediaPlayerController mediaPlayerController;
     public SeekBar mediaPlayerSeekBar;
     public TextView currentPositionTextView;
@@ -36,12 +45,13 @@ public class MainActivity extends AppCompatActivity {
     public ImageView mediaPlayPauseImageView;
 
     public Button remindButton;
-    public Button meditationCompletedButton;
+    public TextView meditationCompletedTextView;
 
     private boolean isMediaSeekBarBusy;
     private boolean isMediaCurrentPositionTextViewBusy;
     private boolean isMediaRemainingPositionTextViewBusy;
     private boolean isMediaPlayPauseImageViewBusy;
+    private boolean isMeditationCompletedTextViewBusy;
     Intent serviceCreationIntent;
     IntentFilter intentFilter;
     ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -56,20 +66,30 @@ public class MainActivity extends AppCompatActivity {
             stopService(serviceCreationIntent);
         }
     };
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        isActivityAlive = true;
+        receiveBroadcastService();
+        initializeComponents();
+        setOnClickMethods();
+        scheduleAlarms();
+        setVisibilityOfDisplayObjects();
+
+    }
+
 
     @Override
     protected void onStart() {
         super.onStart();
-        setContentView(R.layout.activity_main);
+        setVisibilityOfRemindButton();
+    }
 
-        serviceCreationIntent = new Intent(this, MediaPlayerController.class);
-        bindService(serviceCreationIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
-        intentFilter = new IntentFilter();
-        intentFilter.addAction("NEFESIM_KALBIMDE_MEDIA_PLAYER_UPDATE");
-        registerReceiver(intentReceiver, intentFilter);
-        initializeComponents();
-        setOnClickMethods();
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        isActivityAlive = false;
     }
 
     @Override
@@ -78,7 +98,110 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(getApplicationContext(), MediaPlayerController.class);
         intent.putExtra("command", "viewClosed");
         startService(intent);
+        checkIntentExtraStatus();
     }
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        if (intent.getAction() != null && intent.getAction().equals("NOTIFICATION_CLICKED_ACTION")) {
+            // Handle the notification click
+            // You can transition from onPause to onResume here
+            // For example, call a method or set a flag to indicate the desired state transition
+            // Then, in onResume, check the flag and perform the necessary actions
+        }
+    }
+
+    private void setVisibilityOfDisplayObjects() {
+        setVisibilityOfRemindButton();
+        setVisibilityOfCompletedTextView();
+    }
+
+    private void setVisibilityOfCompletedTextView() {
+        try {
+            boolean isMeditationCompleted = readIsMeditationCompletedFromDB();
+            boolean isDaysMatched = isCurrentDayMatchesWithLastModifiedDay();
+
+            if (isDaysMatched){
+                if (isMeditationCompleted) {
+                    setMeditationCompletedOnScreen();
+                } else {
+                    setMeditationIncompletedOnScreen();
+                }
+            } else {
+                setMeditationIncompletedOnScreen();
+                saveMeditationUncompletedOnDB();
+            }
+
+        }catch (Exception e){
+            System.out.println("MainActivity setVisibilityOfCompletedTextView error: " + e.getLocalizedMessage());
+        }
+    }
+
+    private boolean isCurrentDayMatchesWithLastModifiedDay() {
+        String lastModifiedDate = readLastModifiedDateFromDB();
+        String currentDate = getCurrentDateAsString();
+        if (lastModifiedDate.equals(currentDate)){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private String readLastModifiedDateFromDB() {
+        String currentDate = getCurrentDateAsString();
+        SharedPreferences sharedPreferences = getSharedPreferences(getResources().getString(R.string.SharedPreferencesNameStr), Context.MODE_PRIVATE);
+        return sharedPreferences.getString(getResources().getString(R.string.lastModifiedDateOnDBStr), currentDate);
+    }
+
+    private String getCurrentDateAsString() {
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-mm-yyyy");
+        return dateFormat.format(calendar.getTime());
+    }
+
+    private void setMeditationIncompletedOnScreen() {
+        try {
+            if (isMeditationCompletedTextViewBusy) {
+                return;
+            } else {
+                isMeditationCompletedTextViewBusy = true;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    meditationCompletedTextView.setText(R.string.meditation_incompleted_text);
+                    meditationCompletedTextView.setBackgroundResource(R.drawable.complete_button_background);
+                    isMeditationCompletedTextViewBusy = false;
+                }
+            });
+        }catch (Exception e){
+            System.out.println("MainActivity setMeditationCompleted error: " + e.getLocalizedMessage());
+        }
+    }
+
+    private boolean readIsMeditationCompletedFromDB() {
+        SharedPreferences sharedPreferences = getSharedPreferences(getResources().getString(R.string.SharedPreferencesNameStr), Context.MODE_PRIVATE);
+        return sharedPreferences.getBoolean(getResources().getString(R.string.isMeditationCompletedStr), false);
+    }
+
+    private void checkIntentExtraStatus() {
+        try {
+            Intent intent = getIntent();
+            Bundle bundle = intent.getExtras();
+            String activityStartReason = "";
+            if (bundle != null){
+                activityStartReason = bundle.getString("ActivityStartReason");
+            } else return;
+
+            if (activityStartReason.equals("Alarm")){
+                intent.removeExtra("ActivityStartReason");
+            }
+        }catch (Exception e){
+            System.out.println("MainActivity checkIntentExtraStatus error: " + e.getLocalizedMessage());
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -86,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra("command", "viewOpened");
         startService(intent);
     }
+
     private BroadcastReceiver intentReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -103,13 +227,79 @@ public class MainActivity extends AppCompatActivity {
                 case "updateSeekBarOnScreen":
                     updateSeekBarOnScreen(intent);
                     break;
-                case "mediaClickOnSeekBar":
+                case "setMeditationCompletedOnScreen":
+                    setMeditationCompletedOnScreen();
+                    saveMeditationCompletedOnDB();
                     break;
                 default:
                     break;
             }
         }
     };
+
+    private void saveMeditationCompletedOnDB() {
+        String currentDate = getCurrentDateAsString();
+        SharedPreferences sharedPreferences = getSharedPreferences(getResources().getString(R.string.SharedPreferencesNameStr), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(getResources().getString(R.string.isMeditationCompletedOnDBStr), true);
+        editor.putString(getResources().getString(R.string.lastModifiedDateOnDBStr), currentDate);
+        editor.commit();
+    }
+    private void saveMeditationUncompletedOnDB() {
+        String currentDate = getCurrentDateAsString();
+        SharedPreferences sharedPreferences = getSharedPreferences(getResources().getString(R.string.SharedPreferencesNameStr), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(getResources().getString(R.string.isMeditationCompletedOnDBStr), false);
+        editor.putString(getResources().getString(R.string.lastModifiedDateOnDBStr), currentDate);
+        editor.commit();
+    }
+
+    private void setMeditationCompletedOnScreen() {
+        try {
+            if (isMeditationCompletedTextViewBusy) {
+                return;
+            } else {
+                isMeditationCompletedTextViewBusy = true;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    meditationCompletedTextView.setText(R.string.meditation_completed_text);
+                    meditationCompletedTextView.setBackgroundResource(R.drawable.completed_button_background);
+                    isMeditationCompletedTextViewBusy = false;
+                    remindButton.setVisibility(View.GONE);
+                }
+            });
+        }catch (Exception e){
+            System.out.println("MainActivity setMeditationCompleted error: " + e.getLocalizedMessage());
+        }
+    }
+
+    private void receiveBroadcastService() {
+        serviceCreationIntent = new Intent(this, MediaPlayerController.class);
+        bindService(serviceCreationIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
+        intentFilter = new IntentFilter();
+        intentFilter.addAction("NEFESIM_KALBIMDE_MEDIA_PLAYER_UPDATE");
+        registerReceiver(intentReceiver, intentFilter);
+    }
+    private void setVisibilityOfRemindButton() {
+        try {
+            Intent intent = getIntent();
+            Bundle bundle = intent.getExtras();
+            String activityStartReason = "";
+            if (bundle != null){
+                activityStartReason = bundle.getString("ActivityStartReason");
+            }
+
+            if (activityStartReason.equals("Alarm")){
+                remindButton.setVisibility(View.VISIBLE);
+            } else {
+                remindButton.setVisibility(View.GONE);
+            }
+        }catch (Exception e){
+            System.out.println("MainActivity setVisibilityOfRemindButton error: " + e.getLocalizedMessage());
+        }
+    }
 
     private void updateSeekBarOnScreen(Intent intent) {
         try {
@@ -155,12 +345,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        System.out.println("MainActivity setSeekBarProgress error: ");
 
-    }
     private void initializeComponents(){
         mediaPlayerSeekBar = findViewById(R.id.media_seekbar);
 
@@ -173,7 +358,7 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayPauseImageView = findViewById(R.id.media_play_pause_image_view);
 
         remindButton = findViewById(R.id.remind_button);
-        meditationCompletedButton = findViewById(R.id.meditation_completed_button);
+        meditationCompletedTextView = findViewById(R.id.meditation_completed_textview);
     }
 
     private void setOnClickMethods() {
@@ -220,7 +405,6 @@ public class MainActivity extends AppCompatActivity {
                     intent.putExtra("command", "mediaClickOnSeekBar");
                     intent.putExtra("progress", progress);
                     startService(intent);
-//                    mediaPlayerController.mediaClickOnSeekBar(progress);
                 }
             }
 
@@ -232,6 +416,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
 
+            }
+        });
+        remindButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
             }
         });
     }
@@ -350,5 +540,68 @@ public class MainActivity extends AppCompatActivity {
         });
 
         return true;
+    }
+
+    private void scheduleAlarms() {
+        Context context = getApplicationContext();
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        // Set up alarms for 10:00 AM, 3:00 PM, and 8:00 PM
+        setAlarm(alarmManager, 10, 0);
+        setAlarm(alarmManager, 15, 0);
+        setAlarm(alarmManager, 20, 0);
+    }
+
+    private void setAlarm(AlarmManager alarmManager, int hour, int minute) {
+        Context context = getApplicationContext();
+        Intent intent = new Intent(context, AlarmController.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                generateUniqueId(hour, minute),
+                intent,
+                PendingIntent.FLAG_IMMUTABLE
+        );
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, hour);
+        calendar.set(Calendar.MINUTE, minute);
+        calendar.set(Calendar.SECOND, 0);
+
+        // Check if the time has already passed today, if yes, set it for the next day
+        if (System.currentTimeMillis() > calendar.getTimeInMillis()) {
+            calendar.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        // Set the alarm
+        alarmManager.setRepeating(
+                AlarmManager.RTC_WAKEUP,
+                calendar.getTimeInMillis(),
+                AlarmManager.INTERVAL_DAY,
+                pendingIntent
+        );
+    }
+
+    private int generateUniqueId(int hour, int minute) {
+        // Generate a unique ID based on the hour and minute to avoid conflicts
+        return hour * 100 + minute;
+    }
+
+    public void setAlarm() {
+        Context context = getApplicationContext();
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        Intent intent = new Intent(context, AlarmController.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+
+        // Set the alarm to 10 PM
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(System.currentTimeMillis());
+        calendar.set(Calendar.HOUR_OF_DAY, 10); // 10 AM
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+
+        // Set the alarm to repeat every day
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(),
+                AlarmManager.INTERVAL_DAY, pendingIntent);
     }
 }

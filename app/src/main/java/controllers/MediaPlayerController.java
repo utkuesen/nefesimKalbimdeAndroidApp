@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import Model.MediaPlayerModel;
 
 public class MediaPlayerController extends Service {
-    boolean isViewAppeared;
+    public static boolean isViewAppeared;
     private static final int UPDATE_MEDIA_PLAYER_SCREEN_PERIOD_MILlI_SECONDS = 1000;
     private static final int MEDIA_POSITION_CHANGE_STEP_MILlI_SECONDS = 10000;
  //   MainActivity view;
@@ -290,8 +290,15 @@ public class MediaPlayerController extends Service {
         @Override
         public void onCompletion(MediaPlayer mediaPlayer) {
             releaseMediaPlayer();
+            setMeditationCompletedOnScreen();
         }
     };
+
+    private void setMeditationCompletedOnScreen() {
+        Intent intent = new Intent("NEFESIM_KALBIMDE_MEDIA_PLAYER_UPDATE");
+        intent.putExtra("command", "setMeditationCompletedOnScreen");
+        sendBroadcast(intent);
+    }
 
     private AudioManager.OnAudioFocusChangeListener mOnAudioFocusChangeListener = new AudioManager.OnAudioFocusChangeListener() {
         @Override

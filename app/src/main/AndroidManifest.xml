@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -24,6 +27,11 @@
             </intent-filter>
         </activity>
         <service android:name="controllers.MediaPlayerController" ></service>
+        <receiver
+            android:name="controllers.AlarmController"
+            android:enabled="true"
+            android:exported="false"/>
+
     </application>
 
 </manifest>

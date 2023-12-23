@@ -4,27 +4,28 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:orientation="vertical"
+    android:background="#FFE5E3"
     tools:context=".MainActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:gravity="center"
+        android:background="#42AFA2"
         android:orientation="horizontal">
 
         <TextView
             android:id="@+id/textView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:text="@string/app_name"
             android:textColor="#ffffff"
-            android:textSize="20sp"
+            android:textSize="24sp"
             android:textAlignment="center"
             android:padding="10dp"
-            android:background="#42AFA2"
-            android:gravity="center_horizontal" />
+
+            android:gravity="center" />
     </LinearLayout>
 
     <ImageView
@@ -32,7 +33,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="4"
-        android:scaleType="fitXY"
+        android:scaleType="fitCenter"
         android:contentDescription="@string/app_name"
         app:srcCompat="@drawable/main_image" />
 
@@ -123,28 +124,30 @@
         android:layout_height="0dp"
         android:layout_weight="2"
         android:gravity="center"
-        android:padding="@dimen/playlist_margin"
+        android:layout_gravity="center"
         android:orientation="vertical">
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/remind_button"
+            android:visibility="gone"
             android:layout_width="300dp"
             android:textAllCaps="false"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/button_heights"
             android:background="@drawable/remind_button_background"
             android:textColor="@color/white"
             android:text="@string/remind_me_later_button_str"
             android:textSize="16sp" />
 
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/meditation_completed_button"
+        <TextView
+            android:id="@+id/meditation_completed_textview"
             android:layout_width="300dp"
             android:textAllCaps="false"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/button_heights"
             android:layout_marginTop="10dp"
             android:background="@drawable/complete_button_background"
             android:textSize="16sp"
             android:textColor="@color/white"
+            android:gravity="center"
             android:text="@string/completed_button_str" />
     </LinearLayout>
 </LinearLayout>
