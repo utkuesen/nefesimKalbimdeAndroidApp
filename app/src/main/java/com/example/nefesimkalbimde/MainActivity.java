@@ -100,17 +100,6 @@ public class MainActivity extends AppCompatActivity {
         startService(intent);
         checkIntentExtraStatus();
     }
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-
-        if (intent.getAction() != null && intent.getAction().equals("NOTIFICATION_CLICKED_ACTION")) {
-            // Handle the notification click
-            // You can transition from onPause to onResume here
-            // For example, call a method or set a flag to indicate the desired state transition
-            // Then, in onResume, check the flag and perform the necessary actions
-        }
-    }
 
     private void setVisibilityOfDisplayObjects() {
         setVisibilityOfRemindButton();

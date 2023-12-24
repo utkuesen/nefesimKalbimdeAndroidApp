@@ -7,11 +7,13 @@ import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -27,13 +29,54 @@ public class AlarmController extends BroadcastReceiver {
     public static final int AFTERNOON_REMINDER_TIME = 15;
     public static final int EVENING_REMINDER_TIME = 20;
     boolean isViewAppeared;
+    SharedPreferences preferences;
+    Context appContext;
     @Override
     public void onReceive(Context context, Intent intent) {
-        boolean isTimesAreMatched = checkAnyAlarmTimeMatched();
+        appContext = context;
+        preferences = context.getSharedPreferences(appContext.getString(R.string.SharedPreferencesNameStr), Context.MODE_PRIVATE);
 
-        if(isTimesAreMatched && !MediaPlayerController.isViewAppeared) {
-            showNotification(context, "Nefesim Kalbimde", "Nefes meditasyonu zamanı!");
+        boolean isMeditationCompleted = readIsMeditationCompletedFromDB();
+        boolean isDaysMatched = isCurrentDayMatchesWithLastModifiedDay();
+
+        if (isDaysMatched){
+            if (!isMeditationCompleted) {
+                notifyUserIfAlarmTimesMatchesAndViewNotAppeared();
+            }
+        } else {
+            notifyUserIfAlarmTimesMatchesAndViewNotAppeared();
         }
+    }
+
+    private void notifyUserIfAlarmTimesMatchesAndViewNotAppeared() {
+        boolean isTimesAreMatched = checkAnyAlarmTimeMatched();
+        if(isTimesAreMatched && !MediaPlayerController.isViewAppeared) {
+            showNotification(appContext, "Nefesim Kalbimde", "Nefes meditasyonu zamanı!");
+        }
+    }
+
+    private boolean readIsMeditationCompletedFromDB() {
+        return preferences.getBoolean(appContext.getString(R.string.isMeditationCompletedStr), false);
+    }
+
+    private boolean isCurrentDayMatchesWithLastModifiedDay() {
+        String lastModifiedDate = readLastModifiedDateFromDB();
+        String currentDate = getCurrentDateAsString();
+        if (lastModifiedDate.equals(currentDate)){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private String readLastModifiedDateFromDB() {
+        String currentDate = getCurrentDateAsString();
+        return preferences.getString(appContext.getString(R.string.lastModifiedDateOnDBStr), currentDate);
+    }
+    private String getCurrentDateAsString() {
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-mm-yyyy");
+        return dateFormat.format(calendar.getTime());
     }
 
     private boolean checkAnyAlarmTimeMatched() {
