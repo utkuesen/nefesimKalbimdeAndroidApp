@@ -1,4 +1,4 @@
-package com.example.nefesimkalbimde;
+package com.utmerdesign.nefesimkalbimde;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -9,8 +9,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -23,11 +21,9 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Timer;
 
 import controllers.AlarmController;
 import controllers.MediaPlayerController;
@@ -83,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        setVisibilityOfRemindButton();
+        setVisibilityOfDisplayObjects();
     }
 
     @Override
@@ -145,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String getCurrentDateAsString() {
         Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-mm-yyyy");
+        SimpleDateFormat dateFormat = new SimpleDateFormat(getResources().getString(R.string.DateFormatstr));
         return dateFormat.format(calendar.getTime());
     }
 
@@ -573,24 +569,5 @@ public class MainActivity extends AppCompatActivity {
     private int generateUniqueId(int hour, int minute) {
         // Generate a unique ID based on the hour and minute to avoid conflicts
         return hour * 100 + minute;
-    }
-
-    public void setAlarm() {
-        Context context = getApplicationContext();
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-
-        Intent intent = new Intent(context, AlarmController.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-
-        // Set the alarm to 10 PM
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(System.currentTimeMillis());
-        calendar.set(Calendar.HOUR_OF_DAY, 10); // 10 AM
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-
-        // Set the alarm to repeat every day
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(),
-                AlarmManager.INTERVAL_DAY, pendingIntent);
     }
 }

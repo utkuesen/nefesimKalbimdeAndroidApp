@@ -53,4 +53,6 @@
     <string name="lastModifiedDateOnDBStr">lastModifiedDate</string>
     <string name="isMeditationCompletedOnDBStr">isMeditationCompleted</string>
     <string name="SharedPreferencesNameStr">NefesimKalbimdeSP</string>
+    <string name="DateFormatstr">dd/MM/yyyy</string>
+    <string name="TimeFormatstr">HH:mm</string>
 </resources>

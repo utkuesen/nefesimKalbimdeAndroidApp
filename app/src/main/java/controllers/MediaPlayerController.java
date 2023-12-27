@@ -12,7 +12,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import com.example.nefesimkalbimde.R;
+import com.utmerdesign.nefesimkalbimde.R;
 
 import java.util.Timer;
 import java.util.TimerTask;

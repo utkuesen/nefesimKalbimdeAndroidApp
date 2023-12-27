@@ -3,23 +3,18 @@ package controllers;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.os.Binder;
 import android.os.Build;
-import android.os.IBinder;
-import android.preference.PreferenceManager;
 
-import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
-import com.example.nefesimkalbimde.MainActivity;
-import com.example.nefesimkalbimde.R;
+import com.utmerdesign.nefesimkalbimde.MainActivity;
+import com.utmerdesign.nefesimkalbimde.R;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -75,13 +70,13 @@ public class AlarmController extends BroadcastReceiver {
     }
     private String getCurrentDateAsString() {
         Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-mm-yyyy");
+        SimpleDateFormat dateFormat = new SimpleDateFormat(appContext.getString(R.string.DateFormatstr));
         return dateFormat.format(calendar.getTime());
     }
 
     private boolean checkAnyAlarmTimeMatched() {
         Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+        SimpleDateFormat sdf = new SimpleDateFormat(appContext.getString(R.string.TimeFormatstr));
         String currentTime = sdf.format(calendar.getTime());
 
         if (currentTime.equals(String.valueOf(MORNING_REMINDER_TIME) + ":00")){

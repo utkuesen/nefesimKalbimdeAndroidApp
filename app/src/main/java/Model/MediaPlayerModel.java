@@ -1,6 +1,6 @@
 package Model;
 
-import com.example.nefesimkalbimde.R;
+import com.utmerdesign.nefesimkalbimde.R;
 
 public class MediaPlayerModel {
     private boolean isMediaListening;

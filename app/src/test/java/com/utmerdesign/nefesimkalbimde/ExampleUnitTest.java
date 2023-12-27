@@ -1,4 +1,4 @@
-package com.example.nefesimkalbimde;
+package com.utmerdesign.nefesimkalbimde;
 
 import org.junit.Test;
 

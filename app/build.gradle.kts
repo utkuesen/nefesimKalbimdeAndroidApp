@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.nefesimkalbimde"
+    namespace = "com.utmerdesign.nefesimkalbimde"
     compileSdk = 33
 
     defaultConfig {
-        applicationId = "com.example.nefesimkalbimde"
+        applicationId = "com.utmerdesign.nefesimkalbimde"
         minSdk = 16
         targetSdk = 33
         versionCode = 1
