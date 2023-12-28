@@ -104,11 +104,15 @@ public class AlarmController extends BroadcastReceiver {
         // Set the sound for the notification
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
-        int notificationId = 1; // You can use a unique ID for each notification
+        int notificationId = generateUniqueNotificationID(); // You can use a unique ID for each notification
         Intent notificationIntent = new Intent(context, MainActivity.class);
         notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         notificationIntent.putExtra("ActivityStartReason", "Alarm");
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, notificationId, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                notificationId,
+                notificationIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         // Create a notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "breath_on_my_heart_alarm_channel")
@@ -126,6 +130,19 @@ public class AlarmController extends BroadcastReceiver {
         notificationManager.notify(notificationId, builder.build());
     }
 
+    private int generateUniqueNotificationID() {
+        Calendar calendar = Calendar.getInstance();
 
+        // Get year, month, and day as integers
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH) + 1; // Note: Months are zero-based, so add 1
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+        // Get hour and minute as integers
+        int hour = calendar.get(Calendar.HOUR_OF_DAY); // 24-hour format
+        int minute = calendar.get(Calendar.MINUTE);
+
+        int uniq_id = year * 10000 + month * 1000 + day * 100 + hour * 10 + minute;
+        return uniq_id;
+    }
 
 }

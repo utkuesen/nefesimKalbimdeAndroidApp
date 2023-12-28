@@ -22,10 +22,11 @@ import Model.MediaPlayerModel;
 
 public class MediaPlayerController extends Service {
     public static boolean isViewAppeared;
+    public static MediaPlayerModel mediaPlayerModel;
     private static final int UPDATE_MEDIA_PLAYER_SCREEN_PERIOD_MILlI_SECONDS = 1000;
     private static final int MEDIA_POSITION_CHANGE_STEP_MILlI_SECONDS = 10000;
  //   MainActivity view;
-    MediaPlayerModel mediaPlayerModel;
+
     private MediaPlayer mediaPlayer;
     private AudioManager mAudioManager;
 

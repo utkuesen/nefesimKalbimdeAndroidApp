@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             mediaPlayerController = ((MediaPlayerController.MyBinder)service).getService();
+            setVisibilityOfPlayPauseImageView();
             startService(serviceCreationIntent);
         }
 
@@ -71,8 +72,6 @@ public class MainActivity extends AppCompatActivity {
         initializeComponents();
         setOnClickMethods();
         scheduleAlarms();
-        setVisibilityOfDisplayObjects();
-
     }
 
 
@@ -80,6 +79,19 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         setVisibilityOfDisplayObjects();
+    }
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        // Handle new intent
+        handleIntent(intent);
+    }
+    private void handleIntent(Intent intent) {
+        if (intent != null && intent.getExtras() != null) {
+            // Retrieve data from the intent
+            setVisibilityOfRemindButton(intent);
+        }
     }
 
     @Override
@@ -98,8 +110,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setVisibilityOfDisplayObjects() {
-        setVisibilityOfRemindButton();
+        Intent intent = getIntent();
+        setVisibilityOfRemindButton(intent);
         setVisibilityOfCompletedTextView();
+        setVisibilityOfPlayPauseImageView();
+    }
+    private void setVisibilityOfPlayPauseImageView() {
+        Intent intent = getIntent();
+        setVisibilityOfRemindButton(intent);
+        setVisibilityOfCompletedTextView();
+        if (mediaPlayerController == null){
+            setPlayPauseImageViewImageResource(R.drawable.play_button);
+        } else {
+            boolean isMediaListening = mediaPlayerController.mediaPlayerModel.isMediaListening();
+            if (isMediaListening) {
+                setPlayPauseImageViewImageResource(R.drawable.pause_button);
+            } else {
+                setPlayPauseImageViewImageResource(R.drawable.play_button);
+            }
+        }
     }
 
     private void setVisibilityOfCompletedTextView() {
@@ -267,9 +296,8 @@ public class MainActivity extends AppCompatActivity {
         intentFilter.addAction("NEFESIM_KALBIMDE_MEDIA_PLAYER_UPDATE");
         registerReceiver(intentReceiver, intentFilter);
     }
-    private void setVisibilityOfRemindButton() {
+    private void setVisibilityOfRemindButton(Intent intent) {
         try {
-            Intent intent = getIntent();
             Bundle bundle = intent.getExtras();
             String activityStartReason = "";
             if (bundle != null){
@@ -474,7 +502,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public boolean setPlayPauseImageViewImageResource(int resoruce_id){
+    public boolean setPlayPauseImageViewImageResource(int resource_id){
         try {
             if (isMediaPlayPauseImageViewBusy) {
                 return false;
@@ -484,7 +512,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    mediaPlayPauseImageView.setImageResource(resoruce_id);
+                    mediaPlayPauseImageView.setImageResource(resource_id);
                     isMediaPlayPauseImageViewBusy = false;
                 }
             });
