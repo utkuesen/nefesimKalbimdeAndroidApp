@@ -1,20 +1,28 @@
 package com.utmerdesign.nefesimkalbimde;
 
+import android.app.Activity;
 import android.app.AlarmManager;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationManagerCompat;
 
 import android.os.IBinder;
+import android.provider.Settings;
 import android.view.View;
 
 import android.widget.Button;
@@ -72,8 +80,16 @@ public class MainActivity extends AppCompatActivity {
         initializeComponents();
         setOnClickMethods();
         scheduleAlarms();
-    }
 
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Intent intent = new Intent(getApplicationContext(), MediaPlayerController.class);
+        intent.putExtra("command", "viewOpened");
+        startService(intent);
+        checkAndShowNotificationPermissionDialog(this, this);
+    }
 
     @Override
     protected void onStart() {
@@ -108,6 +124,63 @@ public class MainActivity extends AppCompatActivity {
         startService(intent);
         checkIntentExtraStatus();
     }
+
+    public static void checkAndShowNotificationPermissionDialog(Context context, Activity activity) {
+        if (!areNotificationsEnabled(context)) {
+            showNotificationPermissionDialog(context, activity);
+        }
+    }
+
+    public static boolean areNotificationsEnabled(Context context) {
+        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(context);
+        return notificationManagerCompat.areNotificationsEnabled();
+    }
+    public static void showNotificationPermissionDialog(final Context context, final Activity activity) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(R.string.permissionTitleStr);
+        builder.setMessage(R.string.permissionMessage);
+
+        builder.setPositiveButton(R.string.permissionPositiveButtonStr, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                openNotificationSettings(context);
+            }
+        });
+
+        builder.setNegativeButton(R.string.permissionNegativeButtonStr, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                activity.finish();
+            }
+        });
+
+        builder.show();
+    }
+
+    private static void openNotificationSettings(Context context) {
+        Intent intent;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+            intent.putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName());
+        } else {
+            intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse(Settings.ACTION_APP_NOTIFICATION_SETTINGS));
+            intent.putExtra("package", context.getPackageName());
+        }
+
+        context.startActivity(intent);
+    }
+
+    private boolean checkNotificationPermission() {
+        PackageManager packageManager = getApplicationContext().getPackageManager();
+        boolean hasPermission = packageManager.checkPermission("android.permission.ACCESS_NOTIFICATIONS", getApplicationContext().getPackageName()) == PackageManager.PERMISSION_GRANTED;
+        return hasPermission;
+    }
+
+
+
+
 
     private void setVisibilityOfDisplayObjects() {
         Intent intent = getIntent();
@@ -216,13 +289,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Intent intent = new Intent(getApplicationContext(), MediaPlayerController.class);
-        intent.putExtra("command", "viewOpened");
-        startService(intent);
-    }
+
 
     private BroadcastReceiver intentReceiver = new BroadcastReceiver() {
         @Override

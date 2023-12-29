@@ -36,16 +36,16 @@ public class AlarmController extends BroadcastReceiver {
 
         if (isDaysMatched){
             if (!isMeditationCompleted) {
-                notifyUserIfAlarmTimesMatchesAndViewNotAppeared();
+                notifyUserIfViewNotAppeared();
             }
         } else {
-            notifyUserIfAlarmTimesMatchesAndViewNotAppeared();
+            notifyUserIfViewNotAppeared();
         }
     }
 
-    private void notifyUserIfAlarmTimesMatchesAndViewNotAppeared() {
-        boolean isTimesAreMatched = checkAnyAlarmTimeMatched();
-        if(isTimesAreMatched && !MediaPlayerController.isViewAppeared) {
+    private void notifyUserIfViewNotAppeared() {
+//        boolean isTimesAreMatched = checkAnyAlarmTimeMatched();
+        if(!MediaPlayerController.isViewAppeared) {
             showNotification(appContext, "Nefesim Kalbimde", "Nefes meditasyonu zamanı!");
         }
     }
@@ -115,8 +115,8 @@ public class AlarmController extends BroadcastReceiver {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         // Create a notification
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "breath_on_my_heart_alarm_channel")
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+        NotificationCompat.Builder bu ilder = new NotificationCompat.Builder(context, "breath_on_my_heart_alarm_channel")
+                .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setContentTitle(title)
                 .setContentText(content)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)

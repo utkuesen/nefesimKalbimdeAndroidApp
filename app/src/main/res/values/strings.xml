@@ -55,4 +55,8 @@
     <string name="SharedPreferencesNameStr">NefesimKalbimdeSP</string>
     <string name="DateFormatstr">dd/MM/yyyy</string>
     <string name="TimeFormatstr">HH:mm</string>
+    <string name="permissionTitleStr">Bildirim izinlerini veriniz</string>
+    <string name="permissionMessage">Nefesim Kalbimde uygulamasının çalışması için bildirim iznin verilmiş olması gerekmektedir. Bildirimler hatırlatma amacıyla kullanılacaktır.</string>
+    <string name="permissionPositiveButtonStr">İzin ver</string>
+    <string name="permissionNegativeButtonStr">Uygulamayı kapat</string>
 </resources>
